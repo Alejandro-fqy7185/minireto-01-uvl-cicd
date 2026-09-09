@@ -1,20 +1,30 @@
-name: CI and delivery
+name: CI, delivery and deployment
 
-on: [push]
+on:
+  push:
+    branches: [main]
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - run: python -m pip install -r requirements-dev.txt
       - run: python validate.py
       - run: python -m pytest
       - run: python build.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: uvl-catalog-site
-          path: site
+
+      - name: Deploy to Netlify
+        run: npx --yes netlify-cli@23.4.0 deploy --dir=site --prod
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
